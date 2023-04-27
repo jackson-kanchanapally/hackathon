@@ -6,20 +6,32 @@ const nodemailer = require("nodemailer");
 
 router.get("/", async (req, res) => {
   const wof = await topw.find({}).sort({ createdAt: -1 });
+
   res.status(200).json(wof);
 });
-router.get('/:fname',async(req,res)=>{
-    const {fname,lname}=req.params
-    try{
-        const count=await topw.countDocuments({fname:fname,lname:lname})
-        console.log(count)
-        res.json(count)
-    }
-    catch(err){
-        console.log(err)
-        res.status(505).send('err')
-    }
-})
+router.get("/val", async (req, res) => {
+  // const wof = await topw.find({}).sort({ createdAt: -1 });
+  try {
+    const countByBranch = await topw.aggregate([
+      { $group: { _id: "$branch", count: { $sum: 1 } } },
+    ]);
+    res.json(countByBranch);
+  } catch (err) {
+    console.log(err);
+  }
+  // res.status(200).json(wof);
+});
+router.get("/:fname", async (req, res) => {
+  const { fname, lname } = req.params;
+  try {
+    const count = await topw.countDocuments({ fname: fname, lname: lname });
+    console.log(count);
+    res.json(count);
+  } catch (err) {
+    console.log(err);
+    res.status(505).send("err");
+  }
+});
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -33,28 +45,35 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { fname, lname } = req.body;
+  const { fname, lname, branch, email, mothname, fathname, phonenum } =
+    req.body;
   try {
-    const wot = await topw.create({ fname, lname });
+    const wot = await topw.create({
+      fname,
+      lname,
+      branch,
+      email,
+      mothname,
+      fathname,
+      phonenum,
+    });
     res.status(200).json(wot);
 
     let testAccount = await nodemailer.createTestAccount();
-    let transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-
+    let config = {
+      service: "gmail",
       auth: {
-        user: testAccount.user, // generated ethereal user
-        pass: testAccount.pass, // generated ethereal password
+        user: "miprorebu@gmail.com",
+        pass: "tmuvenfpiuslgrre",
       },
-    });
-
+    };
+    let transporter = nodemailer.createTransport(config);
     // setup email data with unicode symbols
     let info = await transporter.sendMail({
-      from: '"Fred Foo 👻" <foo@example.com>', // sender address
-      to: "jacksonmintu7@gmail.com, 6pathsnarutosasuke@gmail.com", // list of receivers
-      subject: "Hello ✔", // Subject line
-      text: `Hello world? ${fname} is joined college`, // plain text body
+      from: '"Hackthon" <foo@example.com>', // sender address
+      to: "jacksonmintu7@gmail.com, 6pathsnarutosasuke@gmail.com,sankruthyakrishna13@gmail.com", // list of receivers
+      subject: "New Student Joined ", // Subject line
+      text: `New Student : ${fname} joined the college in ${branch}`, // plain text body
       html: "",
     });
     console.log("Message sent: %s", info.messageId);
@@ -74,5 +93,24 @@ router.delete("/:id", async (req, res) => {
   }
   res.status(200).json();
 });
+router.patch("/:id", async (req, res) => {
+  const { id } = req.params;
 
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: "No such workout" });
+  }
+
+  const workout = await topw.findOneAndUpdate(
+    { _id: id },
+    {
+      ...req.body,
+    }
+  );
+
+  if (!workout) {
+    return res.status(400).json({ error: "No such workout" });
+  }
+
+  res.status(200).json(workout);
+});
 module.exports = router;
