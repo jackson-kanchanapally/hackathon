@@ -3,7 +3,8 @@ const topw = require("../models/mode");
 const mongoose = require("mongoose");
 const router = express.Router();
 const nodemailer = require("nodemailer");
-
+const requireAuth = require('../middleware/requireAuth')
+router.use(requireAuth)
 router.get("/", async (req, res) => {
   const wof = await topw.find({}).sort({ createdAt: -1 });
 
